@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:navermapapp/main_page.dart'; // MainPage import
+import 'package:navermapapp/main_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,10 +11,12 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _showPermissionDialog = true; // 권한 안내 다이얼로그 표시 여부
+
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+    // 초기화는 다이얼로그가 닫힌 후에 진행하도록 변경
   }
 
   Future<void> _initializeApp() async {
@@ -58,15 +60,63 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Text('Your App Name', style: TextStyle(fontSize: 24)),
-            SizedBox(height: 20),
-            CircularProgressIndicator(),
-          ],
-        ),
+      body: Stack(
+        children: [
+          Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Image(
+                  image: AssetImage('assets/logo.jpg'),
+                  // width: 200,
+                  // height: 200,
+                  fit: BoxFit.cover,
+                ),
+                const Text(
+                  '나의 흔적',
+                  style: TextStyle(
+                    fontSize: 24,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 20),
+                CircularProgressIndicator(),
+              ],
+            ),
+          ),
+
+          // 권한 안내 다이얼로그
+          if (_showPermissionDialog)
+            Container(
+              color: Colors.black54, // 반투명 배경
+              child: Center(
+                child: AlertDialog(
+                  title: const Text('권한 요청 안내'),
+                  content: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('앱을 사용하기 위해서는 다음\n권한이 필요합니다.'),
+                      SizedBox(height: 10),
+                      Text('- 카메라: 사진 촬영 및 이미지 업로드'),
+                      Text('- 위치: 현재 위치 정보 사용'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _showPermissionDialog = false; // 다이얼로그 닫기
+                        });
+                        _initializeApp(); // 권한 요청 및 앱 초기화 진행
+                      },
+                      child: const Text('확인'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
