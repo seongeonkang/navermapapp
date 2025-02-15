@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:navermapapp/api_service.dart';
 import 'package:navermapapp/area_code_data.dart';
+import 'package:navermapapp/home_detail_page.dart';
 import 'package:navermapapp/location_based_list_data.dart';
+import 'package:navermapapp/provider.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,11 +18,12 @@ class _HomePageState extends State<HomePage> {
   AreaCodeData? areaCodeData;
   LocationBasedListData? locationBasedListData;
   bool isLoading = false;
-  String serviceKey =
-      'hw6GHSr0QCkKe1CdUwRF71yOGIXqqwPIvgFoW%2F83sxctXH97yiFQ8DGB55SthPnZOIOffGphY9q8aslzXmMzhA%3D%3D';
+  // String serviceKey =
+  //     'hw6GHSr0QCkKe1CdUwRF71yOGIXqqwPIvgFoW%2F83sxctXH97yiFQ8DGB55SthPnZOIOffGphY9q8aslzXmMzhA%3D%3D';
   double? mapX;
   double? mapY;
   String selectedCategory = '음식점'; // 초기 선택된 카테고리
+  double selectedRadius = 2000; // 초기 반경 값
 
   final Map<String, String> contentTypeMap = {
     '음식점': '39',
@@ -47,7 +51,7 @@ class _HomePageState extends State<HomePage> {
       LocationPermission permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        print("위치 권한이 거부되었습니다.");
+        debugPrint("위치 권한이 거부되었습니다.");
         return;
       }
 
@@ -63,7 +67,7 @@ class _HomePageState extends State<HomePage> {
         mapY = position.latitude;
       });
     } catch (e) {
-      print("현재 위치를 가져오는 데 실패했습니다: $e");
+      debugPrint("현재 위치를 가져오는 데 실패했습니다: $e");
     } finally {
       setState(() {
         isLoading = false;
@@ -79,14 +83,14 @@ class _HomePageState extends State<HomePage> {
         // 기존 데이터 초기화
       });
       if (mapX == null || mapY == null) {
-        print("위치 정보가 없어 API 호출을 중단합니다.");
+        debugPrint("위치 정보가 없어 API 호출을 중단합니다.");
         return;
       }
 
       // ContentTypeId 가져오기
       String? contentTypeId = contentTypeMap[contentType];
       if (contentTypeId == null) {
-        print('해당 카테고리에 대한 ContentTypeId가 없습니다.');
+        debugPrint('해당 카테고리에 대한 ContentTypeId가 없습니다.');
         return;
       }
 
@@ -94,13 +98,17 @@ class _HomePageState extends State<HomePage> {
         'contentTypeId': contentTypeId,
         'mapX': mapX.toString(), // 현재 경도 사용
         'mapY': mapY.toString(), // 현재 위도 사용
-        'radius': '2000',
+        'radius': selectedRadius.toString(), // 선택된 반경 사용,
         'listYN': 'Y',
         'MobileOS': 'AND',
         'MobileApp': 'navermapapp',
-        'numOfRows': '12',
+        'numOfRows': '50',
         'pageNo': '1'
       };
+
+      final serviceKeyProvider =
+          Provider.of<ServiceKeyProvider>(context, listen: false);
+      final serviceKey = serviceKeyProvider.getServiceKey();
 
       final data = await ApiService.fetchData<LocationBasedListData>(
         path: 'locationBasedList1',
@@ -155,6 +163,195 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
+        // actions: [
+        //   // actions 추가
+        //   TextButton(
+        //     onPressed: () {
+        //       // 거리 설정 버튼 클릭 시 동작
+        //       print('거리 설정 버튼 클릭!');
+        //       // 여기에 거리 설정 관련 로직을 추가합니다.
+        //     },
+        //     style: TextButton.styleFrom(
+        //       foregroundColor: Colors.white, // 버튼 텍스트 색상
+        //     ),
+        //     child: Text('거리 설정'),
+        //   ),
+        // ],
+
+        // actions: [
+        //   // actions 추가
+        //   IconButton(
+        //     icon: Icon(Icons.settings), // 설정 아이콘 사용
+        //     onPressed: () {
+        //       // 거리 설정 버튼 클릭 시 동작
+        //       print('거리 설정 버튼 클릭!');
+        //       // 여기에 거리 설정 관련 로직을 추가합니다.
+        //     },
+        //   ),
+        // ],
+
+        //actions 추가
+        actions: [
+          // InkWell 또는 GestureDetector 사용
+          InkWell(
+            onTap: () {
+              // 거리 설정 버튼 클릭 시 동작
+              print('거리 설정 버튼 클릭!');
+              showModalBottomSheet(
+                // Bottom Sheet 표시
+                context: context,
+                //backgroundColor: Colors.transparent, // 배경 투명하게 설정
+                isScrollControlled: true, // 내용이 화면 전체를 차지하도록 설정
+                builder: (BuildContext context) {
+                  return StatefulBuilder(builder:
+                      (BuildContext context, StateSetter setModalState) {
+                    return Container(
+                      width: MediaQuery.of(context).size.width, // 가로 크기를 화면에 맞춤
+                      height: 200,
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white, // BottomSheet 배경색
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween, // 양 끝 정렬
+                            children: [
+                              SizedBox(width: 16),
+                              Text(
+                                '거리 설정',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              IconButton(
+                                // 내리기 아이콘 버튼
+                                icon: Icon(Icons.arrow_drop_down),
+                                onPressed: () {
+                                  Navigator.pop(context); // Bottom Sheet 닫기
+                                },
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 16),
+                          // 여기에 거리 설정 UI를 추가합니다.
+                          Slider(
+                            // Slider 추가
+                            value: selectedRadius,
+                            min: 100,
+                            max: 5000,
+                            divisions: 5, // Slider 눈금 개수
+
+                            label:
+                                '${selectedRadius.toStringAsFixed(0)}m', // 현재 값 표시
+                            onChanged: (newValue) {
+                              setModalState(() {
+                                selectedRadius =
+                                    newValue; // BottomSheet 내부 상태 변경
+                              });
+                            },
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context); // Bottom Sheet 닫기
+                              fetchLocationBasedListData(
+                                  selectedCategory); // 새로운 거리로 데이터 가져오기
+                            },
+                            child: Text('적용'),
+                          ),
+                        ],
+                      ),
+                    );
+                  });
+                },
+              );
+            },
+            child: Container(
+              height: 34,
+              padding:
+                  EdgeInsets.symmetric(horizontal: 8, vertical: 1), // 적절한 패딩 설정
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 134, 160, 232), // 버튼 배경색
+                borderRadius: BorderRadius.circular(8), // 둥근 모서리
+              ),
+              child: Center(
+                child: Text(
+                  '거리 설정',
+                  style: TextStyle(
+                    color: Colors.white, // 텍스트 색상
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          //   // ElevatedButton 사용
+          // ElevatedButton(
+          //   onPressed: () {
+          //     // 거리 설정 버튼 클릭 시 동작
+          //     print('거리 설정 버튼 클릭!');
+          //     showModalBottomSheet(
+          //       // Bottom Sheet 표시
+          //       context: context,
+          //       backgroundColor: Colors.transparent, // 배경 투명하게 설정
+          //       isScrollControlled: true, // 내용이 화면 전체를 차지하도록 설정
+          //       builder: (BuildContext context) {
+          //         return Container(
+          //           width: MediaQuery.of(context).size.width, // 가로 크기를 화면에 맞춤
+          //           padding: EdgeInsets.all(16),
+          //           decoration: BoxDecoration(
+          //             color: Colors.white, // BottomSheet 배경색
+          //             borderRadius: BorderRadius.only(
+          //               topLeft: Radius.circular(20),
+          //               topRight: Radius.circular(20),
+          //             ),
+          //           ),
+          //           child: Column(
+          //             mainAxisSize: MainAxisSize.min,
+          //             children: [
+          //               Text(
+          //                 '거리 설정',
+          //                 style: TextStyle(
+          //                   fontSize: 20,
+          //                   fontWeight: FontWeight.bold,
+          //                 ),
+          //               ),
+          //               SizedBox(height: 16),
+          //               // 여기에 거리 설정 UI를 추가합니다.
+          //               ElevatedButton(
+          //                 onPressed: () {
+          //                   Navigator.pop(context); // Bottom Sheet 닫기
+          //                 },
+          //                 child: Text('확인'),
+          //               ),
+          //             ],
+          //           ),
+          //         );
+          //       },
+          //     );
+          //   },
+          //   style: ElevatedButton.styleFrom(
+          //     // ElevatedButton 스타일 설정
+          //     backgroundColor: Colors.blue, // 배경색
+          //     foregroundColor: Colors.white, // 텍스트 색상
+          //     textStyle: TextStyle(fontWeight: FontWeight.bold), // 폰트 굵기
+          //     shape: RoundedRectangleBorder(
+          //       // 둥근 모서리
+          //       borderRadius: BorderRadius.circular(8),
+          //     ),
+          //   ),
+          //   child: Text('거리 설정'),
+          // ),
+          SizedBox(width: 8), // AppBar actions 간 간격
+        ],
       ),
       body: Stack(
         children: [
@@ -210,13 +407,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          // if (isLoading)
-          //   Container(
-          //     color: Color.fromRGBO(0, 0, 0, 0.053),
-          //     child: const Center(
-          //       child: CircularProgressIndicator(),
-          //     ),
-          //   ),
         ],
       ),
     );
@@ -230,7 +420,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           InkWell(
             onTap: () {
-              print('$label 아이콘 탭!');
+              debugPrint('$label 아이콘 탭!');
               fetchLocationBasedListData(label);
             },
             child: CircleAvatar(
@@ -266,6 +456,10 @@ class CardItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    // final contentId =
+    //     locationBasedListData.data[index]['contentid'] ?? ''; // contentid 가져오기
+    final itemData = locationBasedListData.data[index];
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Card(
@@ -273,54 +467,66 @@ class CardItem extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        child: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                  child:
-                      locationBasedListData.data[index]['firstimage'] != null &&
-                              locationBasedListData
-                                  .data[index]['firstimage'].isNotEmpty
-                          ? Image.network(
-                              locationBasedListData.data[index]['firstimage'],
-                              width: screenWidth - 32,
-                              fit: BoxFit.cover,
-                              errorBuilder: (BuildContext context,
-                                  Object exception, StackTrace? stackTrace) {
-                                return const Center(
-                                    child: Text('Failed to load image'));
-                              },
-                            )
-                          : Container(
-                              width: screenWidth - 32,
-                              height: 150,
-                              color: Colors.grey[200],
-                              child: Center(child: Text('No image available')),
-                            ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        locationBasedListData.data[index]['title'] ??
-                            'No Title',
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      SizedBox(height: 4),
-                      Text(locationBasedListData.data[index]['addr1'] ??
-                          'No Address'),
-                    ],
-                  ),
-                ),
-              ],
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    DetailPage(itemData: itemData), // contentid 전달
+              ),
             );
           },
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(12)),
+                    child: locationBasedListData.data[index]['firstimage'] !=
+                                null &&
+                            locationBasedListData
+                                .data[index]['firstimage'].isNotEmpty
+                        ? Image.network(
+                            locationBasedListData.data[index]['firstimage'],
+                            width: screenWidth - 32,
+                            fit: BoxFit.cover,
+                            errorBuilder: (BuildContext context,
+                                Object exception, StackTrace? stackTrace) {
+                              return const Center(
+                                  child: Text('Failed to load image'));
+                            },
+                          )
+                        : Container(
+                            width: screenWidth - 32,
+                            height: 150,
+                            color: Colors.grey[200],
+                            child: Center(child: Text('No image available')),
+                          ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          locationBasedListData.data[index]['title'] ??
+                              'No Title',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        SizedBox(height: 4),
+                        Text(locationBasedListData.data[index]['addr1'] ??
+                            'No Address'),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
