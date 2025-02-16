@@ -1,9 +1,10 @@
-// detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:navermapapp/api_service.dart';
+import 'package:navermapapp/fullscreen_map_page.dart';
 import 'package:navermapapp/location_based_list_data.dart';
 import 'package:navermapapp/provider.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 class DetailPage extends StatefulWidget {
   final Map<String, dynamic> itemData;
@@ -17,19 +18,26 @@ class DetailPage extends StatefulWidget {
 class _DetailPageState extends State<DetailPage> {
   String title = '상세 정보'; // 초기 제목 설정
   LocationBasedListData? detaillistData;
-  bool isLoading = false; // 로딩 상태를 나타내는 변수
+  List<dynamic> imgListData = [];
+  bool isLoading = false;
+  String? selectedImageUrl;
+  NLatLng? _location;
 
   @override
   void initState() {
     super.initState();
     fetchListData();
+    fetchimgListData();
+
+    // 초기 이미지 URL 설정
+    selectedImageUrl = widget.itemData['firstimage'] ?? "";
     // 위젯이 처음 생성될 때 제목 초기화
     title = widget.itemData['title'] ?? '상세 정보';
   }
 
   Future<void> fetchListData() async {
     setState(() {
-      isLoading = true; // 데이터 로딩 시작 시 로딩 상태를 true로 설정
+      isLoading = true;
     });
     try {
       final params = {
@@ -52,21 +60,68 @@ class _DetailPageState extends State<DetailPage> {
 
       final data = await ApiService.fetchData<LocationBasedListData>(
         path: 'detailCommon1',
-        serviceKey: serviceKey, //serviceKey,
+        serviceKey: serviceKey,
         params: params,
         responseModel: LocationBasedListData(),
         responseType: 'xml',
-        itemsElement: 'item', // <item> 태그 명시
+        itemsElement: 'item',
       );
 
       setState(() {
         detaillistData = data;
+
+        _location = NLatLng(
+          double.parse(detaillistData!.data[0]['mapy'] ?? '0'),
+          double.parse(detaillistData!.data[0]['mapx'] ?? '0'),
+        );
       });
     } catch (e) {
       debugPrint('Failed to fetch location based list data: $e');
     } finally {
       setState(() {
-        isLoading = false; // 데이터 로딩 완료 시 로딩 상태를 false로 설정
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> fetchimgListData() async {
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      final params = {
+        'contentId': widget.itemData['contentid'].toString(),
+        'MobileOS': 'AND',
+        'MobileApp': 'navermapapp',
+        'imageYN': 'Y',
+        'subImageYN': 'Y',
+        'numOfRows': '20',
+      };
+
+      final serviceKeyProvider =
+          Provider.of<ServiceKeyProvider>(context, listen: false);
+      final serviceKey = serviceKeyProvider.getServiceKey();
+
+      final imgdata = await ApiService.fetchData<LocationBasedListData>(
+        path: 'detailImage1',
+        serviceKey: serviceKey,
+        params: params,
+        responseModel: LocationBasedListData(),
+        responseType: 'xml',
+        itemsElement: 'item',
+      );
+
+      setState(() {
+        imgListData = imgdata.data ?? [];
+        //if (imgListData.isNotEmpty) {
+        // selectedImageUrl = imgListData[0]['originimgurl']; // 첫 번째 이미지 URL 설정
+        //}
+      });
+    } catch (e) {
+      debugPrint('Failed to fetch location based list data: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
       });
     }
   }
@@ -80,42 +135,137 @@ class _DetailPageState extends State<DetailPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: isLoading // 로딩 중일 때 로딩 Indicator 표시
+        child: isLoading
             ? Center(child: CircularProgressIndicator())
             : (detaillistData != null && detaillistData!.data.isNotEmpty)
                 ? SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (detaillistData?.data[0]['firstimage'] != null &&
-                            detaillistData?.data[0]['firstimage'].isNotEmpty)
+                        if (selectedImageUrl != null && selectedImageUrl != "")
                           Image.network(
-                            detaillistData?.data[0]['firstimage'],
+                            selectedImageUrl!,
                             width: MediaQuery.of(context).size.width - 32,
                             fit: BoxFit.cover,
+                            errorBuilder: (BuildContext context,
+                                Object exception, StackTrace? stackTrace) {
+                              return const Center(
+                                  child: Text('Failed to load image'));
+                            },
+                          )
+                        else
+                          Container(
+                            width: MediaQuery.of(context).size.width - 32,
+                            height: 150,
+                            color: Colors.grey[200],
+                            child: Center(child: Text('No image available')),
                           ),
                         SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: imgListData.map((item) {
+                              final imageUrl = item['originimgurl'] ?? '';
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedImageUrl = imageUrl;
+                                    });
+                                  },
+                                  child: Image.network(
+                                    imageUrl,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (BuildContext context,
+                                        Object exception,
+                                        StackTrace? stackTrace) {
+                                      return const Center(
+                                          child: Text('Failed to load image'));
+                                    },
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        SizedBox(height: 8),
                         Text(
-                          '우편번호: ${detaillistData?.data[0]['zipcode'] ?? '주소 없음'}',
+                          '${detaillistData?.data[0]['overview'] ?? '상세 설명 없음'}',
                           style: TextStyle(fontSize: 16),
                         ),
                         SizedBox(height: 8),
                         Text(
-                          '주소: ${detaillistData?.data[0]['addr1'] ?? '전화번호 없음'}',
-                          style: TextStyle(fontSize: 16),
+                          '주 소 : (${detaillistData?.data[0]['zipcode'] ?? '없음'}) ${detaillistData?.data[0]['addr1'] ?? '주소없음'}',
+                          style: TextStyle(fontSize: 14),
                         ),
                         SizedBox(height: 8),
-                        Text(
-                          '${detaillistData?.data[0]['overview'] ?? '전화번호 없음'}',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        _location == null
+                            ? const Text("좌표 정보가 없습니다.")
+                            : Stack(
+                                children: [
+                                  // 네이버 맵
+                                  SizedBox(
+                                    width:
+                                        MediaQuery.of(context).size.width - 32,
+                                    height: 200,
+                                    child: NaverMap(
+                                      options: NaverMapViewOptions(
+                                        zoomGesturesEnable: false,
+                                        scrollGesturesEnable: false,
+                                        initialCameraPosition: NCameraPosition(
+                                          target: _location!,
+                                          zoom: 15,
+                                        ),
+                                      ),
+                                      onMapReady: (controller) {
+                                        controller.addOverlay(NMarker(
+                                          id: 'markerId',
+                                          position: _location!,
+                                        ));
+                                      },
+                                    ),
+                                  ),
+
+                                  // 터치 이벤트를 감지하는 GestureDetector (맵 위에 배치)
+                                  Positioned.fill(
+                                    child: GestureDetector(
+                                      behavior: HitTestBehavior
+                                          .translucent, // 투명한 영역에서도 터치 감지
+                                      onTap: () {
+                                        debugPrint("맵이 클릭되었습니다!"); // 디버깅용
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                FullScreenMapPage(
+                                              initialLocation: _location!,
+                                              address: detaillistData?.data[0]
+                                                  ['addr1'],
+                                              title: title,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                        SizedBox(height: 8),
                       ],
                     ),
                   )
                 : Center(
-                    child: Text('상세 정보를 불러올 수 없습니다.'), // 데이터가 없을 경우 메시지 표시
+                    child: Text('상세 정보를 불러올 수 없습니다.'),
                   ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }
