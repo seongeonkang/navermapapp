@@ -222,7 +222,8 @@ class _DetailPageState extends State<DetailPage> {
                                       ),
                                       onMapReady: (controller) {
                                         controller.addOverlay(NMarker(
-                                          id: 'markerId',
+                                          id: UniqueKey()
+                                              .toString(), //'markerId',
                                           position: _location!,
                                         ));
                                       },
