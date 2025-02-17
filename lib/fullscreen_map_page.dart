@@ -26,18 +26,18 @@ class _FullScreenMapPageState extends State<FullScreenMapPage> {
   @override
   void initState() {
     super.initState();
-    getCurrentLocation().then((location) {
+    getCurrentLocation().then((location) async {
       setState(() {
         _currentLocation = location;
-
-        _currentLocationMarker = NMarker(
-          id: "current_location",
-          position: NLatLng(
-              _currentLocation!.latitude!, _currentLocation!.longitude!),
-          iconTintColor: Colors.blue,
-        );
-        mapController!.addOverlay(_currentLocationMarker!);
       });
+      _currentLocationMarker = NMarker(
+        id: "current_location",
+        position:
+            NLatLng(_currentLocation!.latitude!, _currentLocation!.longitude!),
+        // iconTintColor: Colors.blue,
+        icon: await createCustomMarkerIcon(context, color: Colors.red),
+      );
+      mapController!.addOverlay(_currentLocationMarker!);
     });
   }
 
@@ -51,6 +51,24 @@ class _FullScreenMapPageState extends State<FullScreenMapPage> {
     }
   }
 
+  Future<NOverlayImage> createCustomMarkerIcon(BuildContext context,
+      {Color color = Colors.blue}) async {
+    return await NOverlayImage.fromWidget(
+      widget: Container(
+        padding: const EdgeInsets.all(1),
+        decoration: BoxDecoration(
+          color: color, // 매개변수로 색상 변경 가능!
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child:
+            const Icon(Icons.person_pin_circle, color: Colors.white, size: 26),
+      ),
+      size: const Size(32, 32),
+      context: context,
+    );
+  }
+
   Future<void> moveMapToCurrentLocation() async {
     if (mapController == null || _currentLocation == null) return;
 
@@ -62,12 +80,15 @@ class _FullScreenMapPageState extends State<FullScreenMapPage> {
       ),
     );
 
+    final customIcon = await createCustomMarkerIcon(context, color: Colors.red);
+
     setState(() {
       _currentLocationMarker = NMarker(
         id: "current_location",
         position:
             NLatLng(_currentLocation!.latitude!, _currentLocation!.longitude!),
-        iconTintColor: Colors.blue,
+        // iconTintColor: Colors.blue,
+        icon: customIcon,
       );
       mapController!.addOverlay(_currentLocationMarker!);
     });
@@ -104,7 +125,7 @@ class _FullScreenMapPageState extends State<FullScreenMapPage> {
                 zoom: 16,
               ),
             ),
-            onMapReady: (controller) {
+            onMapReady: (controller) async {
               mapController = controller;
 
               // 목적지 마커 추가
@@ -119,7 +140,9 @@ class _FullScreenMapPageState extends State<FullScreenMapPage> {
                   id: 'myLocationMarker',
                   position: NLatLng(_currentLocation!.latitude!,
                       _currentLocation!.longitude!),
-                  iconTintColor: Colors.blue, // 내 위치 마커 색상
+                  // iconTintColor: Colors.blue, // 내 위치 마커 색상
+                  icon:
+                      await createCustomMarkerIcon(context, color: Colors.red),
                 ));
               }
             },
