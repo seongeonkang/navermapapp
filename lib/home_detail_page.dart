@@ -28,9 +28,6 @@ class _DetailPageState extends State<DetailPage> {
   NLatLng? _sharelocation; // 공유지도 위치 정보
 
   // 네이버 API 클라이언트 ID 및 시크릿 (반드시 안전하게 관리해야 함)
-  final String naverClientId = 'e6w6y43muq'; // 여기에 클라이언트 ID 입력
-  final String naverClientSecret =
-      '2vVtMBJEzzRZnlMDHfg7h6hfOFjiMJOnjm8KGDMq'; // 여기에 클라이언트 시크릿 입력
 
   @override
   void initState() {
