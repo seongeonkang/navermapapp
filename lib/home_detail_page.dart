@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:navermapapp/api_service.dart'; // API 서비스 관련 파일
 import 'package:navermapapp/fullscreen_map_page.dart'; // 전체 화면 지도 페이지 관련 파일
@@ -8,7 +6,7 @@ import 'package:navermapapp/provider.dart'; // Provider 패턴 관련 파일
 import 'package:provider/provider.dart'; // Provider 패키지
 import 'package:flutter_naver_map/flutter_naver_map.dart'; // 네이버 지도 관련 파일
 import 'package:share_plus/share_plus.dart'; // 공유 기능 제공 패키지
-import 'package:http/http.dart' as http; // http 패키지 추가
+import 'package:proj4dart/proj4dart.dart'; // proj4dart 패키지 추가
 
 class DetailPage extends StatefulWidget {
   // 상세 정보 페이지 StatefulWidget
@@ -27,6 +25,7 @@ class _DetailPageState extends State<DetailPage> {
   bool isLoading = false; // 로딩 상태
   String? selectedImageUrl; // 선택된 이미지 URL
   NLatLng? _location; // 지도 위치 정보
+  NLatLng? _sharelocation; // 공유지도 위치 정보
 
   // 네이버 API 클라이언트 ID 및 시크릿 (반드시 안전하게 관리해야 함)
   final String naverClientId = 'e6w6y43muq'; // 여기에 클라이언트 ID 입력
@@ -90,6 +89,37 @@ class _DetailPageState extends State<DetailPage> {
           double.parse(detaillistData!.data[0]['mapy'] ?? '0'),
           double.parse(detaillistData!.data[0]['mapx'] ?? '0'),
         );
+
+        // WGS84 (EPSG:4326) 좌표를 EPSG:3857로 변환
+        if (detaillistData != null && detaillistData!.data.isNotEmpty) {
+          try {
+            final wgs84Y = double.parse(detaillistData!.data[0]['mapy'] ?? '0');
+            final wgs84X = double.parse(detaillistData!.data[0]['mapx'] ?? '0');
+
+            // 좌표계 정의
+            final wgs84 = Projection.get('EPSG:4326')!;
+            final mercator = Projection.get('EPSG:3857')!;
+
+            // 좌표 변환
+            final Point wgs84Point = Point(x: wgs84X, y: wgs84Y);
+            final Point mercatorPoint = wgs84.transform(mercator, wgs84Point);
+
+            // 변환된 좌표 저장
+            _sharelocation = NLatLng(
+              mercatorPoint.y, // 변환된 y 좌표 (위도)
+              mercatorPoint.x, // 변환된 x 좌표 (경도)
+            );
+
+            debugPrint('WGS84: $wgs84X, $wgs84Y'); // WGS84 좌표 출력
+            debugPrint(
+                'EPSG:3857: ${mercatorPoint.x}, ${mercatorPoint.y}'); // EPSG:3857 좌표 출력
+          } catch (e) {
+            debugPrint('좌표 변환 오류: $e');
+            _sharelocation = null; // 변환 실패 시 _location을 null로 설정
+          }
+        } else {
+          _sharelocation = null;
+        }
       });
     } catch (e) {
       debugPrint('Failed to fetch location based list data: $e'); // 오류 처리
@@ -184,9 +214,11 @@ class _DetailPageState extends State<DetailPage> {
   // }
 
   Future<void> _shareToKakaoTalk() async {
-    // 카카오톡으로 공유하는 함수
-    String shareText =
-        '${widget.itemData['title']}\n${detaillistData?.data[0]['overview'] ?? ''}\n주소: ${detaillistData?.data[0]['addr1'] ?? ''}'; // 공유할 텍스트 생성 (제목, 설명, 주소)
+    // // 카카오톡으로 공유하는 함수
+    // String shareText =
+    //     '${widget.itemData['title']}\n${detaillistData?.data[0]['overview'] ?? ''}\n주소: ${detaillistData?.data[0]['addr1'] ?? ''}'; // 공유할 텍스트 생성 (제목, 설명, 주소)
+
+    String shareText = '${widget.itemData['title']}'; // 공유할 텍스트 생성 (제목, 설명, 주소)
 
     // Google Maps URL 생성
     // if (_location != null) {
@@ -198,9 +230,19 @@ class _DetailPageState extends State<DetailPage> {
     // }
 
     if (_location != null) {
-      // 위도와 경도를 사용하여 네이버 지도 웹 URL 생성
+      //공공데이터 좌표가 WGS84 로 되어 있음
+      //EPSG:4326 (WGS84) => EPSG:3857 (Web Mercator)으로 변환
+      //네이버맵은 v5 기준, EPSG:3857 좌표계를 사용
+      //위치만(마커표시가없음) : https://map.naver.com/v5/search?c={x좌표},{y좌표},{배율},0,0,0,dh
+      //주소/타이틀(마커표시함) : https://map.naver.com/p/entry/address/{x좌표},{y좌표},{주소}?c=19.00,0,0,0,dh
+
+      // String naverMapUrl =
+      //     'https://map.naver.com/v5/?c=${_sharelocation!.longitude},${_sharelocation!.latitude},15,0,0,0,dh';
+
+      // 네이버 지도 v5 웹 URL 생성
       String naverMapUrl =
-          'https://m.map.naver.com/appLink.nhn?appname=com.naver.naversearch&version=9&urlScheme=navermap%3A%2F%2Fmap&latitude=${_location!.latitude}&longitude=${_location!.longitude}&name=${Uri.encodeComponent(widget.itemData['title'])}&zoom=15';
+          'https://map.naver.com/p/entry/address/${_sharelocation!.longitude},${_sharelocation!.latitude},${widget.itemData['title']}?c=19.00,0,0,0,dh';
+
       shareText += '\n위치: $naverMapUrl';
     } else {
       shareText += '\n위치 정보 없음';
