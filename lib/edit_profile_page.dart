@@ -146,7 +146,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       context: context,
                       builder: (builder) {
                         return Container(
-                          height: 100.0,
+                          height: 150.0,
                           width: MediaQuery.of(context).size.width,
                           margin: const EdgeInsets.symmetric(
                             horizontal: 20,
