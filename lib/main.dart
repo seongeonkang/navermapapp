@@ -6,6 +6,7 @@ import 'package:navermapapp/firebase_options.dart';
 import 'package:navermapapp/provider.dart';
 import 'package:navermapapp/splash_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +38,17 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const SplashScreen(),
+      // 시작 : CupertinoDatePicker 사용시 한국어 지원을 위해 초기 설정
+      localizationsDelegates: <LocalizationsDelegate<Object>>[
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        Locale('ko', ''),
+        Locale('en', ''),
+      ],
+      //끝 : CupertinoDatePicker 사용시 한국어 지원을 위해 초기 설정
     );
   }
 }
