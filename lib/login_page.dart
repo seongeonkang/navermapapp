@@ -67,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
 
         // users 컬렉션에 존재하면 MyPage로 이동
         if (querySnapshot.docs.isNotEmpty) {
-          _saveLoginState(); // 로그인 상태 저장
+          _saveLoginState(phoneNumber); // 로그인 상태 저장 및 전화번호 저장
           Navigator.of(context).pop(true);
           return;
         } else {
@@ -98,13 +98,8 @@ class _LoginPageState extends State<LoginPage> {
         verificationCompleted: (PhoneAuthCredential credential) async {
           debugPrint('자동 인증 완료');
           await FirebaseAuth.instance.signInWithCredential(credential);
+          _saveLoginState(phoneNumber);
           _showSuccessMessage();
-
-          // _saveLoginState(); // 로그인 상태 저장
-          // Navigator.of(context).pop(); // 로그인 페이지 닫기
-
-          // // 이전 페이지로 돌아가면서 로그인 성공 알림
-          // Navigator.of(context).pop(true);
         },
         verificationFailed: (FirebaseAuthException e) {
           debugPrint('Error Message: ${e.message}');
@@ -122,7 +117,8 @@ class _LoginPageState extends State<LoginPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => UserInfoPage(
+                builder: (context) => OTPVerificationPage(
+                  verificationId: verificationId,
                   phoneNumber: phoneNumber,
                 ),
               ),
@@ -131,8 +127,7 @@ class _LoginPageState extends State<LoginPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => OTPVerificationPage(
-                  verificationId: verificationId,
+                builder: (context) => UserInfoPage(
                   phoneNumber: phoneNumber,
                 ),
               ),
@@ -159,9 +154,10 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Future<void> _saveLoginState() async {
+  Future<void> _saveLoginState(String phoneNumber) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('phoneNumber', phoneNumber); // 전화번호 저장
   }
 
   @override
