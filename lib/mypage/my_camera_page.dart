@@ -3,14 +3,14 @@ import 'package:camera/camera.dart';
 import 'package:navermapapp/preview_page.dart';
 import 'dart:math' as math; // math 라이브러리 임포트
 
-class CameraPage extends StatefulWidget {
-  const CameraPage({super.key});
+class MyCameraPage extends StatefulWidget {
+  const MyCameraPage({super.key});
 
   @override
-  State<CameraPage> createState() => _CameraPageState();
+  State<MyCameraPage> createState() => _MyCameraPageState();
 }
 
-class _CameraPageState extends State<CameraPage> {
+class _MyCameraPageState extends State<MyCameraPage> {
   CameraController? _cameraController;
   Future<void>? _initializeControllerFuture;
 
@@ -57,63 +57,6 @@ class _CameraPageState extends State<CameraPage> {
     }
   }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: const Text('사진 촬영')),
-//       body: FutureBuilder<void>(
-//         future: _initializeControllerFuture,
-//         builder: (context, snapshot) {
-//           if (snapshot.connectionState == ConnectionState.done) {
-//             // return CameraPreview(_cameraController!);
-
-//             // return Transform.rotate(
-//             //   angle: math.pi / 2, // 90도 회전 (반시계 방향)
-//             //   child: Center(
-//             //     child: AspectRatio(
-//             //       aspectRatio: _cameraController!.value.aspectRatio,
-//             //       child: CameraPreview(_cameraController!),
-//             //     ),
-//             //   ),
-//             // );
-
-//             // return Column(
-//             //   // Column 또는 Row 위젯을 사용
-//             //   children: [
-//             //     Expanded(
-//             //       child: Transform.rotate(
-//             //         angle: math.pi / 2, // 필요에 따라 회전 각도 조정
-//             //         child: AspectRatio(
-//             //           aspectRatio: _cameraController!.value.aspectRatio,
-//             //           child: CameraPreview(_cameraController!),
-//             //         ),
-//             //       ),
-//             //     ),
-//             //   ],
-//             // );
-//             return FittedBox(
-//               fit: BoxFit.fill, // 이미지를 늘려 꽉 채움 (왜곡될 수 있음)
-//               child: SizedBox(
-//                 width: MediaQuery.of(context).size.width,
-//                 height: MediaQuery.of(context).size.height,
-//                 child: Transform.rotate(
-//                   angle: math.pi / 2, // 필요에 따라 회전 각도 조정
-//                   child: CameraPreview(_cameraController!),
-//                 ),
-//               ),
-//             );
-//           } else {
-//             return const Center(child: CircularProgressIndicator());
-//           }
-//         },
-//       ),
-//       floatingActionButton: FloatingActionButton(
-//         onPressed: _takePicture,
-//         child: const Icon(Icons.camera_alt),
-//       ),
-//     );
-//   }
-// }
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;

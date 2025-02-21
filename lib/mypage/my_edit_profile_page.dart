@@ -5,18 +5,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as p;
 
-class EditProfilePage extends StatefulWidget {
+class MyEditProfilePage extends StatefulWidget {
   final Map<String, dynamic> userData;
   final Function(Map<String, dynamic>) onProfileUpdated;
 
-  const EditProfilePage(
+  const MyEditProfilePage(
       {super.key, required this.userData, required this.onProfileUpdated});
 
   @override
-  State<EditProfilePage> createState() => _EditProfilePageState();
+  State<MyEditProfilePage> createState() => _MyEditProfilePageState();
 }
 
-class _EditProfilePageState extends State<EditProfilePage> {
+class _MyEditProfilePageState extends State<MyEditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nicknameController;
   late TextEditingController _emailController;

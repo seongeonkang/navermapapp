@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:navermapapp/mypage/my_edit_profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:navermapapp/edit_profile_page.dart'; // EditProfilePage 임포트
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+class MyProfilePage extends StatefulWidget {
+  const MyProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  State<MyProfilePage> createState() => _MyProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _MyProfilePageState extends State<MyProfilePage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   Map<String, dynamic>? _userData;
   List<Map<String, dynamic>> _userReviews = [];
@@ -66,7 +66,7 @@ class _ProfilePageState extends State<ProfilePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => EditProfilePage(
+                  builder: (context) => MyEditProfilePage(
                     userData: _userData!,
                     onProfileUpdated: (updatedData) {
                       setState(() {

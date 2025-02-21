@@ -6,16 +6,16 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:image/image.dart' as img; // image 패키지 추가
 
-class DetailPage extends StatefulWidget {
+class MyDetailPage extends StatefulWidget {
   final Map<String, dynamic> photoData;
 
-  const DetailPage({super.key, required this.photoData});
+  const MyDetailPage({super.key, required this.photoData});
 
   @override
-  State<DetailPage> createState() => _DetailPageState();
+  State<MyDetailPage> createState() => _MyDetailPageState();
 }
 
-class _DetailPageState extends State<DetailPage> {
+class _MyDetailPageState extends State<MyDetailPage> {
   @override
   Widget build(BuildContext context) {
     final double latitude = widget.photoData['latitude'];

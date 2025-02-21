@@ -98,11 +98,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:navermapapp/home_page.dart';
+import 'package:navermapapp/mypage.dart';
+import 'package:navermapapp/mypage/phone_verification.dart';
 import 'package:navermapapp/search_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:navermapapp/login_page.dart';
-import 'package:navermapapp/mypage.dart';
-import 'package:navermapapp/profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Firebase 인증 추가
 
 class MainPage extends StatefulWidget {
@@ -185,9 +184,9 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     Widget getMypageWidget() {
       if (_isLoggedIn) {
-        return const ProfilePage();
+        return const MyPage();
       } else {
-        return MyPage(
+        return PhoneVerification(
           onLoginSuccess: (success) {
             setState(() {
               _isLoggedIn = success;
