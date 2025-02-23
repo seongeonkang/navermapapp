@@ -98,6 +98,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:navermapapp/home_page.dart';
+import 'package:navermapapp/login/login_page.dart';
 import 'package:navermapapp/mypage.dart';
 import 'package:navermapapp/mypage/phone_verification.dart';
 import 'package:navermapapp/search_page.dart';
@@ -186,7 +187,14 @@ class _MainPageState extends State<MainPage> {
       if (_isLoggedIn) {
         return const MyPage();
       } else {
-        return PhoneVerification(
+        // return PhoneVerification(
+        //   onLoginSuccess: (success) {
+        //     setState(() {
+        //       _isLoggedIn = success;
+        //     });
+        //   },
+        // );
+        return LoginPage(
           onLoginSuccess: (success) {
             setState(() {
               _isLoggedIn = success;

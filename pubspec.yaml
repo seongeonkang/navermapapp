@@ -62,6 +62,7 @@ dependencies:
   shared_preferences: ^2.5.2
   path: ^1.9.0
   device_info_plus: ^11.3.0
+  firebase_app_installations: ^0.3.0
 
 dev_dependencies:
   flutter_test:

@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MyPreviewPage extends StatefulWidget {
   final File image;
@@ -64,6 +65,9 @@ class _MyPreviewPageState extends State<MyPreviewPage> {
     });
 
     try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String email = prefs.getString('email') ?? '';
+
       String fileName = path.basename(widget.image.path);
       Reference firebaseStorageRef =
           FirebaseStorage.instance.ref().child('uploads/$fileName');
@@ -74,12 +78,14 @@ class _MyPreviewPageState extends State<MyPreviewPage> {
       String imageUrl = await firebaseStorageRef.getDownloadURL();
 
       await FirebaseFirestore.instance.collection('photos').add({
+        'email': email,
         'imageUrl': imageUrl,
         'title': _titleController.text,
         'content': _contentController.text,
         'latitude': _currentPosition?.latitude,
         'longitude': _currentPosition?.longitude,
         'timestamp': FieldValue.serverTimestamp(),
+        'shareYn': 'N',
       });
 
       Navigator.pop(context); // PreviewPage 닫기
@@ -124,9 +130,9 @@ class _MyPreviewPageState extends State<MyPreviewPage> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
-                    Text(_currentPosition == null
-                        ? '위치 정보를 가져오는 중...'
-                        : '위치: ${_currentPosition!.latitude}, ${_currentPosition!.longitude}'),
+                    // Text(_currentPosition == null
+                    //     ? '위치 정보를 가져오는 중...'
+                    //     : '위치: ${_currentPosition!.latitude}, ${_currentPosition!.longitude}'),
                     ElevatedButton(
                       onPressed: _uploadImageAndSaveData,
                       child: const Text('저장'),

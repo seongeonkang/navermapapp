@@ -36,6 +36,10 @@ class MyApp extends StatelessWidget {
       title: 'Photo Location App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        primaryColor: Colors.blue,
+        // appBarTheme: AppBarTheme(
+        //   backgroundColor: Colors.blue,
+        // ),
       ),
       home: const SplashScreen(),
       // 시작 : CupertinoDatePicker 사용시 한국어 지원을 위해 초기 설정

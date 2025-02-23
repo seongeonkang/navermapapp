@@ -14,7 +14,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   Map<String, dynamic>? _userData;
   List<Map<String, dynamic>> _userReviews = [];
-  String? _phoneNumber;
+  String? _email;
 
   @override
   void initState() {
@@ -24,13 +24,13 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
   Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    _phoneNumber = prefs.getString('phoneNumber');
+    _email = prefs.getString('email');
 
-    if (_phoneNumber != null) {
+    if (_email != null) {
       // users 컬렉션에서 전화번호로 사용자 정보 찾기
       QuerySnapshot userSnapshot = await _firestore
           .collection('users')
-          .where('phoneNumber', isEqualTo: _phoneNumber)
+          .where('email', isEqualTo: _email)
           .get();
 
       if (userSnapshot.docs.isNotEmpty) {
@@ -113,12 +113,12 @@ class _MyProfilePageState extends State<MyProfilePage> {
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
-                  Center(
-                    child: Text(
-                      _phoneNumber ?? '전화번호 없음',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
+                  // Center(
+                  //   child: Text(
+                  //     _phoneNumber ?? '전화번호 없음',
+                  //     style: const TextStyle(fontSize: 16),
+                  //   ),
+                  // ),
                   const SizedBox(height: 24),
 
                   // 팔로잉, 팔로워, 리뷰 건수

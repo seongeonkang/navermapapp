@@ -69,9 +69,11 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       debugPrint("현재 위치를 가져오는 데 실패했습니다: $e");
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
       fetchLocationBasedListData(selectedCategory); // fetchData 호출 시 파라미터 전달
     }
   }
@@ -127,9 +129,11 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       debugPrint('Failed to fetch location based list data: $e');
     } finally {
-      setState(() {
-        isLoading = false; // 로딩 종료
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false; // 로딩 종료
+        });
+      }
     }
   }
 
