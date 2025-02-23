@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_app_installations/firebase_app_installations.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Firebase Firestore 추가
 import 'package:navermapapp/login/signup_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,6 +23,13 @@ class _LoginPageState extends State<LoginPage> {
   String _errorMessage = '';
   bool _isLoading = false; // 로딩 상태를 나타내는 변수
   bool _obscurePassword = true; // 비밀번호 숨김 여부를 나타내는 변수
+  String? _deviceId; // 디바이스 ID 저장 변수
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDeviceId();
+  }
 
   @override
   void dispose() {
@@ -25,6 +37,72 @@ class _LoginPageState extends State<LoginPage> {
     _passwordController.dispose();
     super.dispose();
   }
+
+  Future<void> _loadDeviceId() async {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    String? deviceId;
+
+    try {
+      if (Platform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id;
+      } else if (Platform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        _deviceId = iosInfo.identifierForVendor;
+      }
+    } catch (e) {
+      print('디바이스 ID 가져오기 오류: $e');
+    }
+
+    setState(() {
+      _deviceId = deviceId;
+    });
+  }
+
+  // Future<void> _loadDeviceId() async {
+  //   try {
+  //     final FirebaseInstallations installations =
+  //         FirebaseInstallations.instance;
+  //     final String installationId = await installations.getId();
+
+  //     setState(() {
+  //       _deviceId = installationId;
+  //     });
+
+  //     debugPrint("Firebase Installation ID: $_deviceId");
+  //   } catch (e) {
+  //     debugPrint("Firebase Installation ID 가져오기 실패: $e");
+  //   }
+  // }
+
+  // Future<String> getPersistentUserId() async {
+  //   final auth = FirebaseAuth.instance;
+  //   //final firestore = FirebaseFirestore.instance;
+
+  //   if (auth.currentUser == null) {
+  //     // 익명 로그인
+  //     await auth.signInAnonymously();
+  //   }
+
+  //   return auth.currentUser!.uid;
+  // }
+
+  // Future<void> _loadDeviceId() async {
+  //   try {
+  //     final String userId = await getPersistentUserId();
+
+  //     setState(() {
+  //       _deviceId = userId;
+  //     });
+
+  //     debugPrint("Persistent User ID: $_deviceId");
+  //   } catch (e) {
+  //     debugPrint("Persistent User ID 가져오기 실패: $e");
+  //     setState(() {
+  //       _errorMessage = 'Persistent User ID를 가져오는데 실패했습니다: ${e.toString()}';
+  //     });
+  //   }
+  // }
 
   Future<void> _saveLoginState(String email) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -40,12 +118,54 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       try {
+        final String email = _emailController.text.trim();
+        final String password = _passwordController.text.trim();
+
+        // Firebase Authentication을 사용하여 로그인
         await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: email,
+          password: password,
         );
-        _saveLoginState(_emailController.text.trim());
-        widget.onLoginSuccess(true);
+
+        // Firestore에서 사용자 정보 가져오기 (이메일 필드 사용)
+        final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .get();
+
+        if (querySnapshot.docs.isNotEmpty) {
+          final userData = querySnapshot.docs.first.data()
+              as Map<String, dynamic>; // 첫 번째 문서 사용
+          final storedDeviceId = userData['deviceId'] as String?;
+          final documentId = querySnapshot.docs.first.id; // 문서 ID
+
+          // 디바이스 ID 비교
+          if (storedDeviceId != null && storedDeviceId != _deviceId) {
+            // 디바이스 ID가 다를 경우 에러 메시지 설정
+            setState(() {
+              _errorMessage = '다른 기기에서 가입된 이메일입니다.';
+            });
+            // Firebase Authentication에서 로그아웃 (선택 사항)
+            await FirebaseAuth.instance.signOut();
+            return; // 로그인 중단
+          } else {
+            // 디바이스 ID가 같거나 없는 경우 deviceId 업데이트
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(documentId) // 문서 ID 사용
+                .update({'deviceId': _deviceId});
+
+            _saveLoginState(email);
+            widget.onLoginSuccess(true);
+          }
+        } else {
+          // 사용자 정보가 Firestore에 없는 경우 (예외 처리)
+          setState(() {
+            _errorMessage = '사용자 정보를 찾을 수 없습니다.';
+          });
+          // Firebase Authentication에서 로그아웃 (선택 사항)
+          await FirebaseAuth.instance.signOut();
+        }
       } on FirebaseAuthException catch (e) {
         String message;
         switch (e.code) {
@@ -78,36 +198,27 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text('로그인'),
-      //   centerTitle: true,
-      //   backgroundColor: Colors.blueAccent, // 앱바 색상 변경
-      // ),
       appBar: null,
       body: Center(
-        // 중앙 정렬을 위해 Center 위젯 사용
         child: SingleChildScrollView(
-          // 화면 넘침 방지
           padding: const EdgeInsets.all(20.0),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 앱 로고 또는 이미지 추가
                 Image.asset(
-                  'assets/logo.jpg', // 로고 이미지 경로 (assets 폴더에 이미지 추가 필요)
+                  'assets/logo.jpg',
                   height: 100,
                 ),
                 const SizedBox(height: 20),
-                // 이메일 입력 필드
                 TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(
                     labelText: '이메일',
                     hintText: '이메일 주소를 입력하세요',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email), // 이메일 아이콘 추가
+                    prefixIcon: Icon(Icons.email),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
@@ -121,14 +232,13 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 10),
-                // 비밀번호 입력 필드
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: '비밀번호',
                     hintText: '비밀번호를 입력하세요',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock), // 비밀번호 아이콘 추가
+                    prefixIcon: Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -151,8 +261,6 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 20),
-
-                // 에러 메시지 표시
                 if (_errorMessage.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
@@ -161,18 +269,14 @@ class _LoginPageState extends State<LoginPage> {
                       style: TextStyle(color: Colors.red),
                     ),
                   ),
-                // 로그인 버튼
                 ElevatedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : _signInWithEmailAndPassword, // 로딩 중에는 버튼 비활성화
+                  onPressed: _isLoading ? null : _signInWithEmailAndPassword,
                   style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                     textStyle: TextStyle(fontSize: 18),
-                    backgroundColor: Colors.blueAccent, // 버튼 색상 변경
-                    foregroundColor: Colors.white, // 글자 색상 변경
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      // 버튼 모양 변경
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -188,8 +292,6 @@ class _LoginPageState extends State<LoginPage> {
                       : Text('로그인'),
                 ),
                 const SizedBox(height: 10),
-
-                // 회원가입 버튼
                 TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -200,7 +302,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: const Text(
                     '계정이 없으신가요? 회원가입',
                     style: TextStyle(color: Colors.blueAccent),
-                  ), // 색상 변경
+                  ),
                 ),
               ],
             ),

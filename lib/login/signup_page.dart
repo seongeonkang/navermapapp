@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -82,42 +85,71 @@ class _SignupPageState extends State<SignupPage> {
     }
   }
 
-  // Future<void> _getDeviceId() async {
-  //   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-  //   String? deviceId;
+  Future<void> _loadDeviceId() async {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    String? deviceId;
 
+    try {
+      if (Platform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id;
+      } else if (Platform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        _deviceId = iosInfo.identifierForVendor;
+      }
+    } catch (e) {
+      print('디바이스 ID 가져오기 오류: $e');
+    }
+
+    setState(() {
+      _deviceId = deviceId;
+    });
+  }
+
+  // Future<void> _loadDeviceId() async {
   //   try {
-  //     if (Platform.isAndroid) {
-  //       AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-  //       deviceId = androidInfo.id;
-  //     } else if (Platform.isIOS) {
-  //       IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-  //       deviceId = iosInfo.identifierForVendor;
-  //     }
-  //   } catch (e) {
-  //     print('디바이스 ID 가져오기 오류: $e');
-  //   }
+  //     final FirebaseInstallations installations =
+  //         FirebaseInstallations.instance;
+  //     final String installationId = await installations.getId();
 
-  //   setState(() {
-  //     _deviceId = deviceId;
-  //   });
+  //     setState(() {
+  //       _deviceId = installationId;
+  //     });
+
+  //     debugPrint("Firebase Installation ID: $_deviceId");
+  //   } catch (e) {
+  //     debugPrint("Firebase Installation ID 가져오기 실패: $e");
+  //   }
   // }
 
-  Future<void> _loadDeviceId() async {
-    try {
-      final FirebaseInstallations installations =
-          FirebaseInstallations.instance;
-      final String installationId = await installations.getId();
+  // Future<String> getPersistentUserId() async {
+  //   final auth = FirebaseAuth.instance;
+  //   //final firestore = FirebaseFirestore.instance;
 
-      setState(() {
-        _deviceId = installationId;
-      });
+  //   if (auth.currentUser == null) {
+  //     // 익명 로그인
+  //     await auth.signInAnonymously();
+  //   }
 
-      debugPrint("Firebase Installation ID: $_deviceId");
-    } catch (e) {
-      debugPrint("Firebase Installation ID 가져오기 실패: $e");
-    }
-  }
+  //   return auth.currentUser!.uid;
+  // }
+
+  // Future<void> _loadDeviceId() async {
+  //   try {
+  //     final String userId = await getPersistentUserId();
+
+  //     setState(() {
+  //       _deviceId = userId;
+  //     });
+
+  //     debugPrint("Persistent User ID: $_deviceId");
+  //   } catch (e) {
+  //     debugPrint("Persistent User ID 가져오기 실패: $e");
+  //     setState(() {
+  //       _errorMessage = 'Persistent User ID를 가져오는데 실패했습니다: ${e.toString()}';
+  //     });
+  //   }
+  // }
 
   Future<void> _checkEmailAvailability() async {
     setState(() {
