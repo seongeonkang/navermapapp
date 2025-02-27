@@ -118,8 +118,14 @@ class _MyActivitiesPageState extends State<MyActivitiesPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  MyDetailPage(photoData: data),
+                              builder: (context) => MyDetailPage(
+                                photoData: data,
+                                onDelete: () {
+                                  // 삭제 후 필요한 작업 수행 (예: 목록에서 해당 아이템 제거)
+                                  setState(() {}); // 목록 업데이트
+                                  Navigator.pop(context); // 상세 페이지 닫기
+                                },
+                              ),
                             ),
                           );
                         },
