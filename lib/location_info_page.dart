@@ -99,9 +99,9 @@ class _LocationInfoPageState extends State<LocationInfoPage> {
       });
     } catch (e) {
       debugPrint("현재 위치를 가져오는 데 실패했습니다: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('현재 위치를 가져오는데 실패했습니다.')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('현재 위치를 가져오는데 실패했습니다.')),
+      // );
     } finally {
       fetchLocationBasedListData(selectedCategory);
     }
